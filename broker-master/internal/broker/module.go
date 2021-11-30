@@ -7,6 +7,7 @@ import (
 	"sync"
 	"therealbroker/pkg/broker"
 	"time"
+	//log "github.com/sirupsen/logrus"
 )
 
 type Module struct {
@@ -27,11 +28,6 @@ type chat struct {
 	name string
 	messages []broker.Message
 	subscribedChannels []chan broker.Message
-}
-
-//var subscribedChannelsList []chan broker.Message
-type subscribedChats struct {
-
 }
 
 func NewModule() broker.Broker {
@@ -56,6 +52,7 @@ func (m *Module) Publish(ctx context.Context, subject string, msg broker.Message
 	for i := 0; i < len(m.chats); i++ {
 		if m.chats[i].name == subject {
 			lock.Lock()
+			var lock2 sync.Mutex
 			hasChat = true
 			//fmt.Println("hello")
 			m.chats[i].messages = append(m.chats[i].messages, msg)
@@ -65,9 +62,12 @@ func (m *Module) Publish(ctx context.Context, subject string, msg broker.Message
 			payam.expireTime = msg.Expiration
 			payam.startTime = time.Now()
 			m.allMessages = append(m.allMessages, payam)
+			//lock.Unlock()
 			for j := 0; j < len(m.chats[i].subscribedChannels); j++ {
 				//fmt.Println(len(m.chats[i].subscribedChannels))
+				lock2.Lock()
 				m.chats[i].subscribedChannels[j] <- msg
+				lock2.Unlock()
 			}
 			lock.Unlock()
 			break
@@ -131,13 +131,16 @@ func (m *Module) Fetch(ctx context.Context, subject string, id int) (broker.Mess
 		}, errors.New("service is unavailable")
 	}
 
+	//var lock sync.Mutex
 	for i := 0; i < len(m.allMessages); i++ {
 		if m.allMessages[i].id == id {
+			//lock.Lock()
 			if time.Now().Sub(m.allMessages[i].startTime) < m.allMessages[i].expireTime {
 				return m.allMessages[i].payam, nil
 			} else {
 				return broker.Message{}, errors.New("message with id provided is expired")
 			}
+			//lock.Unlock()
 		}
 	}
 

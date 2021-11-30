@@ -221,6 +221,7 @@ func TestConcurrentPublishOnOneSubjectShouldNotFail(t *testing.T) {
 	}
 }
 
+//check
 func TestConcurrentPublishShouldNotFail(t *testing.T) {
 	ticker := time.NewTicker(500 * time.Millisecond)
 	defer ticker.Stop()
