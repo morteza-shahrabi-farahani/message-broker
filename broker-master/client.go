@@ -54,7 +54,7 @@ func main() {
 	//ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	publishTest := proto.PublishRequest{
 		Subject:           "ali",
-		Body: 			   []byte("110 110"),
+		Body:              []byte("110 110"),
 		ExpirationSeconds: 100000000,
 	}
 	fmt.Println(publishTest)
@@ -64,8 +64,8 @@ func main() {
 	}
 	log.Printf("detail of response. id is %v", publishResponse.GetId())
 	fetchTest := proto.FetchRequest{
-		Subject: 	"ali",
-		Id: 		publishResponse.GetId(),
+		Subject: "ali",
+		Id:      publishResponse.GetId(),
 	}
 	body, err2 := c.Fetch(context.Background(), &fetchTest)
 	if err2 != nil {
