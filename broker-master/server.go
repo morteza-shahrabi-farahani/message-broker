@@ -147,6 +147,7 @@ func main() {
 		//log.Fatal(err)
 		prometheus.Register(totalRequests)
 		prometheus.Register(durationHistogram)
+
 		http.Handle("/metrics", promhttp.Handler())
 		http.ListenAndServe(":5051", nil)
 

@@ -1,0 +1,30 @@
+version: "3.7"
+
+services:
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./prometheus:/etc/prometheus/
+
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+
+    ports:
+      - 9090:9090
+    depends_on:
+      - go-main-service-with-metrics-and-grafana12
+
+  go-main-service-with-metrics-and-grafana12:
+    build: .
+
+    ports:
+      - 5051:5051
+      - 5050:5050
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - 3000:3000
+    depends_on:
+      - prometheus
