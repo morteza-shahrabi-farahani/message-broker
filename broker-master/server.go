@@ -37,6 +37,9 @@ func createMessageNew(request *proto2.PublishRequest) broker3.Message {
 
 func (server *BrokerServer) Publish(ctx context.Context, publishRequest *proto2.PublishRequest) (publishResponse *proto2.PublishResponse, err error) {
 	timer := prometheus.NewTimer(durationHistogram.WithLabelValues("publish duration"))
+	//publishTime := time.Now()
+	//durationWithSummery.WithLabelValues("hello hello hello").Observe(float64(publishTime))
+	timer2 := prometheus.NewTimer(durationWithSummery.WithLabelValues("publish time duration with summary"))
 	//startTime := time.Now()
 	var lock sync.Mutex
 	var result proto2.PublishResponse
@@ -57,6 +60,8 @@ func (server *BrokerServer) Publish(ctx context.Context, publishRequest *proto2.
 	lock.Unlock()
 	totalRequests.WithLabelValues("succeed").Inc()
 	timer.ObserveDuration()
+	timer2.ObserveDuration()
+	//durationWithSummery.WithLabelValues("hahahah ").Observe(float64(time.Now()))
 	return &result, nil
 }
 
@@ -111,6 +116,15 @@ var durationHistogram = promauto.NewHistogramVec(prometheus.HistogramOpts{
 	Help: "Duration of calls.",
 }, []string{"path"})
 
+var durationWithSummery = prometheus.NewSummaryVec(
+	prometheus.SummaryOpts{
+		Name:       "call_duration_with_summary",
+		Help:       "Duration of calls with summary.",
+		Objectives: map[float64]float64{0.5: 0.05, 0.9: 0.01, 0.99: 0.001},
+	},
+	[]string{"species"},
+)
+
 var totalActiveSubscribed = prometheus.NewCounterVec(
 	prometheus.CounterOpts{
 		Name: "number_of_subscribed_channels",
@@ -147,6 +161,7 @@ func main() {
 		//log.Fatal(err)
 		prometheus.Register(totalRequests)
 		prometheus.Register(durationHistogram)
+		prometheus.Register(durationWithSummery)
 
 		http.Handle("/metrics", promhttp.Handler())
 		http.ListenAndServe(":5051", nil)

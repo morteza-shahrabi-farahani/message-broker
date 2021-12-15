@@ -7,14 +7,15 @@ global:
 
 scrape_configs:
   - job_name: monitoring
+    metrics_path: /metrics
     static_configs:
       - targets:
-          - go-main-service-with-metrics-and-grafana12:5050
-          - go-main-service-with-metrics-and-grafana12:5051
+          - go-main-service-with-metrics-and-grafana23:5051
 
   - job_name: prometheus
     static_configs:
-      - targets: [ 'localhost:9090' ]
+      - targets: [ 'localhost:9090']
+
 
 
 
