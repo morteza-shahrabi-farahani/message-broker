@@ -11,7 +11,8 @@ import (
 	"net"
 	"net/http"
 	"sync"
-	//"github.com/gorilla/mux"
+
+	_ "github.com/lib/pq"
 	proto2 "therealbroker/api/proto"
 	broker2 "therealbroker/internal/broker"
 	broker3 "therealbroker/pkg/broker"
@@ -20,6 +21,14 @@ import (
 
 const (
 	port = ":5050"
+)
+
+const (
+	host     = "localhost"
+	dbport   = 5432
+	user     = "postgres"
+	password = "12345678"
+	dbname   = "broker"
 )
 
 type BrokerServer struct {
@@ -167,6 +176,19 @@ func main() {
 		http.ListenAndServe(":5051", nil)
 
 	}()
+
+	//var sqlInfo = fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
+	//	host, dbport, user, password, dbname)
+
+	//dbConnect, err4 := sql.Open("postgres", sqlInfo)
+	//if err4 != nil {
+	//	log.Fatalf("failed to connect to database.")
+	//}
+	////defer dbConnect.Close()
+	//err5 := dbConnect.Ping()
+	//if err5 != nil {
+	//	log.Fatalf("failed to panic database")
+	//}
 
 	lis, err := net.Listen("tcp", port)
 	if err != nil {
