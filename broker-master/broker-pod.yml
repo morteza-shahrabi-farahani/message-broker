@@ -3,10 +3,12 @@ kind: Pod
 metadata:
   name: broker-pod
   labels:
+    name: broker-pod
     app: broker
-    type: server
 spec:
   containers:
     - name: broker-pod-container
       image: broker-master_go-main-service-with-metrics-and-grafana27
       imagePullPolicy: Never
+      ports:
+        - containerPort: 90

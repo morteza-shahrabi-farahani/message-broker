@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: broker-deploy
+  labels:
+    name: broker-deploy
+    app: broker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: broker-pod
+      app: broker
+  template:
+    metadata:
+      name: broker-pod
+      labels:
+        name: broker-pod
+        app: broker
+    spec:
+      containers:
+        - name: broker-pod-container
+          image: broker-master_go-main-service-with-metrics-and-grafana27
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 90
