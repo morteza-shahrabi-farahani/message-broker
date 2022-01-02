@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"google.golang.org/grpc"
 	"log"
 	"therealbroker/api/proto"
@@ -48,28 +47,30 @@ func main() {
 	if err != nil {
 		log.Fatalf("did not connect: %v", err)
 	}
-	defer conn.Close()
+	//defer conn.Close()
 	c := proto.NewBrokerClient(conn)
 
 	//ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	publishTest := proto.PublishRequest{
 		Subject:           "ali",
 		Body:              []byte("110 110"),
-		ExpirationSeconds: 100000000,
+		ExpirationSeconds: 10,
 	}
-	fmt.Println(publishTest)
-	publishResponse, newErr := c.Publish(context.Background(), &publishTest)
+	//fmt.Println(publishTest)
+	_, newErr := c.Publish(context.Background(), &publishTest)
+	//publishResponse, newErr = c.Publish(context.Background(), &publishTest)
+	//publishResponse, newErr = c.Publish(context.Background(), &publishTest)
 	if newErr != nil {
 		log.Fatalf("error is: %v", newErr)
 	}
-	log.Printf("detail of response. id is %v", publishResponse.GetId())
-	fetchTest := proto.FetchRequest{
-		Subject: "ali",
-		Id:      publishResponse.GetId(),
-	}
-	body, err2 := c.Fetch(context.Background(), &fetchTest)
-	if err2 != nil {
-		log.Fatalf("error is %v", err2)
-	}
-	log.Printf("detail of fetch request is %v", body)
+	//log.Printf("detail of response. id is %v", publishResponse.GetId())
+	//fetchTest := proto.FetchRequest{
+	//	Subject: "ali",
+	//	Id:      publishResponse.GetId(),
+	//}
+	//body, err2 := c.Fetch(context.Background(), &fetchTest)
+	//if err2 != nil {
+	//	log.Fatalf("error is %v", err2)
+	//}
+	//log.Printf("detail of fetch request is %v", body)
 }

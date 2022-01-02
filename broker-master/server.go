@@ -36,6 +36,11 @@ type BrokerServer struct {
 	module broker2.Module
 }
 
+//var counter = 0
+//var dbConnect *sql.DB
+//var publishStatement = `INSERT INTO messages1 (subject, body, expirationTime) VALUES ($1, $2, $3) RETURNING id`
+//var deleteStatement = `DELETE FROM messages1 WHERE id = $1`
+
 func createMessageNew(request *proto2.PublishRequest) broker3.Message {
 
 	return broker3.Message{
@@ -53,6 +58,7 @@ func (server *BrokerServer) Publish(ctx context.Context, publishRequest *proto2.
 	var lock sync.Mutex
 	var result proto2.PublishResponse
 	msg := createMessageNew(publishRequest)
+	totalRequests.WithLabelValues("succeed").Inc()
 	fmt.Println(msg)
 	var msgId int
 	lock.Lock()
@@ -70,12 +76,12 @@ func (server *BrokerServer) Publish(ctx context.Context, publishRequest *proto2.
 	totalRequests.WithLabelValues("succeed").Inc()
 	timer.ObserveDuration()
 	timer2.ObserveDuration()
-	//durationWithSummery.WithLabelValues("hahahah ").Observe(float64(time.Now()))
 	return &result, nil
 }
 
 func (server *BrokerServer) Subscribe(subscribeRequest *proto2.SubscribeRequest, subscriveServer proto2.Broker_SubscribeServer) error {
 	timer := prometheus.NewTimer(durationHistogram.WithLabelValues("subscribe duration"))
+	timer2 := prometheus.NewTimer(durationWithSummery.WithLabelValues("subscribe time duration with summary"))
 	ch, err := server.module.Subscribe(context.Background(), subscribeRequest.GetSubject())
 	if err != nil {
 		timer.ObserveDuration()
@@ -90,6 +96,7 @@ func (server *BrokerServer) Subscribe(subscribeRequest *proto2.SubscribeRequest,
 			subscriveServer.Send(&msgResponse)
 		}
 		timer.ObserveDuration()
+		timer2.ObserveDuration()
 		return nil
 	}
 
@@ -97,6 +104,7 @@ func (server *BrokerServer) Subscribe(subscribeRequest *proto2.SubscribeRequest,
 
 func (server *BrokerServer) Fetch(ctx context.Context, fetchRequest *proto2.FetchRequest) (*proto2.MessageResponse, error) {
 	timer := prometheus.NewTimer(durationHistogram.WithLabelValues("fetch duration"))
+	timer2 := prometheus.NewTimer(durationWithSummery.WithLabelValues("fetch time duration with summary"))
 	var messageResponse proto2.MessageResponse
 	msg, err := server.module.Fetch(ctx, fetchRequest.Subject, int(fetchRequest.Id))
 	if err != nil {
@@ -105,6 +113,7 @@ func (server *BrokerServer) Fetch(ctx context.Context, fetchRequest *proto2.Fetc
 		return nil, err
 	} else {
 		timer.ObserveDuration()
+		timer2.ObserveDuration()
 		totalRequests.WithLabelValues("succeed").Inc()
 		messageResponse.Body = []byte(msg.Body)
 		return &messageResponse, nil
@@ -158,48 +167,26 @@ var totalActiveSubscribed = prometheus.NewCounterVec(
 func main() {
 
 	go func() {
-		//router := mux.NewRouter()
-		//router.Use(prometheusMiddleware)
-		//router.Path("/prometheus").Handler(promhttp.Handler())
 
-		// Serving static files
-		//router.PathPrefix("/").Handler(http.FileServer(http.Dir("./static/")))
-
-		//fmt.Println("Serving requests on port 9000")
-		//err := http.ListenAndServe(":9000", router)
-		//log.Fatal(err)
-		prometheus.Register(totalRequests)
 		prometheus.Register(durationHistogram)
 		prometheus.Register(durationWithSummery)
+		prometheus.Register(totalRequests)
 
 		http.Handle("/metrics", promhttp.Handler())
 		http.ListenAndServe(":5051", nil)
 
 	}()
 
-	//var sqlInfo = fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
-	//	host, dbport, user, password, dbname)
-
-	//dbConnect, err4 := sql.Open("postgres", sqlInfo)
-	//if err4 != nil {
-	//	log.Fatalf("failed to connect to database.")
-	//}
-	////defer dbConnect.Close()
-	//err5 := dbConnect.Ping()
-	//if err5 != nil {
-	//	log.Fatalf("failed to panic database")
-	//}
-
 	lis, err := net.Listen("tcp", port)
 	if err != nil {
-		log.Fatalf("failed to listen: %v", err)
+		log.Printf("failed to listen: %v", err)
 	}
 
 	s := grpc.NewServer()
 	proto2.RegisterBrokerServer(s, &BrokerServer{})
 	log.Printf("server listening at: %v", lis.Addr())
 	if err := s.Serve(lis); err != nil {
-		log.Fatalf("failed to serve: %v", err)
+		log.Printf("failed to serve: %v", err)
 	}
 
 }

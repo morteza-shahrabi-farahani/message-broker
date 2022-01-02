@@ -13,9 +13,9 @@ services:
     ports:
       - 9090:9090
     depends_on:
-      - go-main-service-with-metrics-and-grafana27
+      - go-main-service-with-metrics-and-grafana60
 
-  go-main-service-with-metrics-and-grafana27:
+  go-main-service-with-metrics-and-grafana60:
     build: .
 
     ports:
@@ -26,5 +26,25 @@ services:
     image: grafana/grafana:latest
     ports:
       - 3000:3000
-    depends_on:
-      - prometheus
+
+  postgresql1:
+#    restart: always
+    image: postgres:latest
+    container_name: postgres
+    user: 1000:1000
+
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=12345678
+      - POSTGRES_DB=postgres
+      - PGDATA=/var/lib/postgresql/data/mnt
+
+    volumes:
+      - PGDATA:/var/lib/postgresql/data
+
+    ports:
+      - 5432:5432
+
+volumes:
+  PGDATA:
+    driver: local
