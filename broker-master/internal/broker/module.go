@@ -23,9 +23,14 @@ const (
 )
 
 var IDCounter = 0
-var publishStatement = `INSERT INTO MESSAGES2 (subject, body,startTime, expirationTime) VALUES ($1, $2, $3, $4) RETURNING id;`
+
+//insert statement for table with serial id.
+var publishStatement = `INSERT INTO MESSAGES5 (subject, body,startTime, expirationTime) VALUES ($1, $2, $3, $4) RETURNING id;`
+
+//insert statement for table with normal id.
+var publishStatement2 = `INSERT INTO MESSAGES5 (id, subject, body,startTime, expirationTime) VALUES ($1, $2, $3, $4, $5);`
 var deleteStatement = `DELETE FROM MESSAGES2 WHERE id = $1;`
-var selectStatement = `SELECT * FROM users WHERE id=$1;`
+var selectStatement = `SELECT * FROM MESSAGES5 WHERE id=$1;`
 var dbUrl = "postgres://" + user + ":" + password + "@" + host + ":" + dbport + "/?pool_max_conns=50"
 
 type Module struct {
@@ -35,6 +40,7 @@ type Module struct {
 	counter     int
 	allMessages []messages
 	dbConnect   *pgxpool.Pool
+	first       bool
 }
 
 type messages struct {
@@ -77,32 +83,100 @@ func (m *Module) ConnectDatabase() error {
 	m.dbConnect = dbConn
 	m.isConnected = true
 
-	sqlStatement1 := "CREATE TABLE IF NOT EXISTS MESSAGES2 (id SERIAL PRIMARY KEY, subject VARCHAR(50), body VARCHAR(500), startTime TIME, expirationTime FLOAT);"
-	_, err8 := m.dbConnect.Exec(context.Background(), sqlStatement1)
+	//create table statement for table with serial id
+	//sqlStatement1 := "CREATE TABLE IF NOT EXISTS MESSAGES2 (id SERIAL PRIMARY KEY, subject VARCHAR(50), body VARCHAR(500), startTime TIME, expirationTime FLOAT);"
+
+	//create table statement for table with normal id(not serial but still primary key)
+	sqlStatement2 := "CREATE TABLE IF NOT EXISTS MESSAGES5 (id INT PRIMARY KEY, subject VARCHAR(50), body VARCHAR(500), startTime TIME, expirationTime FLOAT);"
+	_, err8 := m.dbConnect.Exec(context.Background(), sqlStatement2)
 	if err8 != nil {
 		fmt.Println("error for creating tablle.\n")
 		return errors.New("couldn't create table")
 	}
 
+	//sqlStatement3 := "SELECT * FROM MESSAGES5 WHERE id = (SELECT MAX(id) FROM MESSAGES5);"
+	////lastId, err9 := m.dbConnect.Exec(context.Background(), sqlStatement3)
+	////if err9 != nil {
+	////	fmt.Println("error for getting last element id.\n")
+	////	return errors.New("coulden't get last id.\n")
+	////} else {
+	////	m.counter = lastId
+	////}
+	//var selectId int
+	//row := m.dbConnect.QueryRow(context.Background(), sqlStatement3)
+	//switch err := row.Scan(&selectId); err {
+	//case sql.ErrNoRows:
+	//	fmt.Println("No rows were returned!")
+	//case nil:
+	//	m.counter = selectId
+	//	fmt.Printf("counter is now: %v", m.counter)
+	//}
+
+	return nil
+}
+
+func (m *Module) GetId() error {
+
+	fmt.Printf("we are here in getId.\n")
+
+	m.first = true
+	sqlStatement33 := "SELECT MAX(Id) FROM MESSAGES5;"
+
+	//lastId, err9 := m.dbConnect.Exec(context.Background(), sqlStatement3)
+	//if err9 != nil {
+	//	fmt.Println("error for getting last element id.\n")
+	//	return errors.New("coulden't get last id.\n")
+	//} else {
+	//	m.counter = lastId
+	//}
+	var selectId int
+	row := m.dbConnect.QueryRow(context.Background(), sqlStatement33)
+	switch err := row.Scan(&selectId); err {
+	case sql.ErrNoRows:
+		fmt.Println("No rows were returned!")
+	case nil:
+		m.counter = selectId
+		fmt.Printf("counter is now: %v", m.counter)
+	}
+
+	fmt.Printf("now counter is %v", m.counter)
 	return nil
 }
 
 func (m *Module) Publish(ctx context.Context, subject string, msg broker.Message) (int, error) {
+	fmt.Printf("publish started")
 	if m.isClosed == true {
 		fmt.Println("this flag is false", m.isClosed)
 		return 0, errors.New("service is unavailable")
 	}
 
 	if !m.isConnected {
+		fmt.Printf("not connected.")
 		m.ConnectDatabase()
+		fmt.Println("now is connected")
 	}
+
+	fmt.Printf("now we check first")
+	if !m.first {
+		fmt.Println("we are in first")
+		m.GetId()
+		fmt.Printf("now we change id and it is %v", m.counter)
+	}
+
 	var lock sync.Mutex
 	var lock3 sync.Mutex
 	//m.CreateTable()
 	lock.Lock()
 	var hasChat = false
-	//m.counter++
-	err6 := m.dbConnect.QueryRow(context.Background(), publishStatement, subject, msg.Body, time.Now(), msg.Expiration).Scan(&m.counter)
+	m.counter++
+	fmt.Printf("now id is %v", m.counter)
+
+	//publish for table with serial id.
+	//err6 := m.dbConnect.QueryRow(context.Background(), publishStatement, subject, msg.Body, time.Now(), msg.Expiration).Scan(&m.counter)
+
+	//publish for table with normal id.
+	_, err6 := m.dbConnect.Exec(context.Background(), publishStatement2, m.counter, subject, msg.Body, time.Now(), msg.Expiration)
+
 	if err6 != nil {
 		log.Printf("unable to insert to database because %v", err6)
 	} /*else {

@@ -10,12 +10,15 @@ scrape_configs:
     metrics_path: /metrics
     static_configs:
       - targets:
-          - go-main-service-with-metrics-and-grafana60:5051
+          - go-main-service-with-metrics-and-grafana69:5051
 
   - job_name: prometheus
     static_configs:
       - targets: [ 'localhost:9090']
 
+
+
+#27 for normal program and 60 for normal database
 
 
 

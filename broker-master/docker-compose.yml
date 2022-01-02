@@ -13,9 +13,9 @@ services:
     ports:
       - 9090:9090
     depends_on:
-      - go-main-service-with-metrics-and-grafana60
+      - go-main-service-with-metrics-and-grafana69
 
-  go-main-service-with-metrics-and-grafana60:
+  go-main-service-with-metrics-and-grafana69:
     build: .
 
     ports:
